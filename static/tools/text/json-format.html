@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线JSON格式化工具 - 格式化、验证和美化JSON数据">
+  <title>JSON 格式化 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/text/json-format.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-content">
+      <a href="/" class="nav-logo">🛠️ 在线工具</a>
+    </div>
+  </nav>
+
+  <div class="tool-page">
+    <header class="page-header">
+      <h1>JSON 格式化</h1>
+      <p>格式化、验证和美化 JSON 数据</p>
+    </header>
+
+    <div class="tool-box">
+      <div class="form-group">
+        <label for="input">输入 JSON</label>
+        <textarea id="input" class="form-textarea" placeholder='{"name":"test","value":123}'></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="indent">缩进空格数</label>
+        <select id="indent" class="form-select">
+          <option value="2" selected>2 空格</option>
+          <option value="4">4 空格</option>
+          <option value="0">压缩（无缩进）</option>
+        </select>
+      </div>
+
+      <button id="formatBtn" class="btn btn-primary btn-block" onclick="formatJSON()">
+        格式化
+      </button>
+      <div id="formatBtn-loading" class="loading"><span class="spinner"></span> 处理中...</div>
+
+      <div id="result" class="result-area"></div>
+
+      <div class="form-group" style="margin-top:1.5rem">
+        <label>输出结果</label>
+        <div id="output" class="code-output" style="min-height:150px"></div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="copyResult()">复制结果</button>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    async function formatJSON() {
+      const input = document.getElementById('input').value;
+      const indent = parseInt(document.getElementById('indent').value);
+      
+      if (!input.trim()) {
+        showResult('result', false, '请输入 JSON 数据');
+        return;
+      }
+      
+      setLoading('formatBtn', true);
+      
+      const result = await apiRequest('/text/json-format', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ json_str: input, indent })
+      });
+      
+      setLoading('formatBtn', false);
+      
+      if (result.success) {
+        document.getElementById('output').textContent = result.formatted;
+        showResult('result', true, '格式化成功！');
+      } else {
+        const errorMsg = result.error_message || '格式化失败';
+        const lineInfo = result.error_line ? ` (行 ${result.error_line}, 列 ${result.error_column})` : '';
+        showResult('result', false, `错误: ${errorMsg}${lineInfo}`);
+      }
+    }
+    
+    function copyResult() {
+      const output = document.getElementById('output').textContent;
+      if (output) {
+        copyToClipboard(output);
+        showResult('result', true, '已复制到剪贴板！');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线正则表达式测试工具">
+  <title>正则测试 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/text/regex-test.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>正则表达式测试</h1><p>在线测试正则表达式匹配</p></header>
+    <div class="tool-box">
+      <div class="form-group"><label>正则表达式</label><input type="text" id="pattern" class="form-input" placeholder="\d+"></div>
+      <div class="form-group"><label>测试文本</label><textarea id="testString" class="form-textarea" placeholder="输入测试文本"></textarea></div>
+      <button class="btn btn-primary btn-block" onclick="testRegex()">测试</button>
+      <div id="result" class="result-area"></div>
+      <div class="form-group" style="margin-top:1rem"><label>匹配结果</label><div id="matches" class="code-output"></div></div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script>
+    async function testRegex() {
+      const pattern = document.getElementById('pattern').value;
+      const testString = document.getElementById('testString').value;
+      const result = await apiRequest('/text/regex-test', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ pattern, test_string: testString })
+      });
+      if (result.success) {
+        document.getElementById('matches').textContent = JSON.stringify(result.matches, null, 2);
+        showResult('result', true, `找到 ${result.match_count} 个匹配`);
+      } else {
+        showResult('result', false, result.error_message);
+      }
+    }
+  </script>
+</body>
+</html>

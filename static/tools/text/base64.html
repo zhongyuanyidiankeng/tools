@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线Base64编解码工具 - 文本与Base64互相转换">
+  <title>Base64 编解码 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/text/base64.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-content">
+      <a href="/" class="nav-logo">🛠️ 在线工具</a>
+    </div>
+  </nav>
+
+  <div class="tool-page">
+    <header class="page-header">
+      <h1>Base64 编解码</h1>
+      <p>文本与 Base64 互相转换</p>
+    </header>
+
+    <div class="tool-box">
+      <div class="form-group">
+        <label for="input">输入文本</label>
+        <textarea id="input" class="form-textarea" placeholder="输入要编码或解码的文本"></textarea>
+      </div>
+
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem">
+        <button class="btn btn-primary" style="flex:1" onclick="convert('encode')">编码 →</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="convert('decode')">← 解码</button>
+      </div>
+
+      <div id="result" class="result-area"></div>
+
+      <div class="form-group">
+        <label>输出结果</label>
+        <textarea id="output" class="form-textarea" readonly></textarea>
+      </div>
+
+      <button class="btn btn-secondary" onclick="copyResult()">复制结果</button>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    async function convert(action) {
+      const input = document.getElementById('input').value;
+      
+      if (!input) {
+        showResult('result', false, '请输入文本');
+        return;
+      }
+      
+      const result = await apiRequest('/text/base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: input, action })
+      });
+      
+      if (result.success) {
+        document.getElementById('output').value = result.result;
+        showResult('result', true, action === 'encode' ? '编码成功！' : '解码成功！');
+      } else {
+        showResult('result', false, result.error_message || '转换失败');
+      }
+    }
+    
+    function copyResult() {
+      const output = document.getElementById('output').value;
+      if (output) {
+        copyToClipboard(output);
+        showResult('result', true, '已复制到剪贴板！');
+      }
+    }
+  </script>
+</body>
+</html>

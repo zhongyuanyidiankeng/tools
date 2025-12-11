@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线图片转PDF工具">
+  <title>图片转 PDF - 在线工具</title>
+  <link rel="canonical" href="/static/tools/pdf/from-images.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>图片转 PDF</h1><p>将多张图片合并为一个 PDF 文件</p></header>
+    <div class="tool-box">
+      <div id="uploadArea" class="upload-area"><input type="file" accept="image/*" multiple><div class="upload-icon">🖼️</div><p class="upload-text">点击或拖拽上传图片</p></div>
+      <div id="fileList" style="margin-top:1rem"></div>
+      <button id="convertBtn" class="btn btn-primary btn-block" style="margin-top:1.5rem" onclick="convert()" disabled>生成 PDF</button>
+      <div id="convertBtn-loading" class="loading"><span class="spinner"></span> 生成中...</div>
+      <div id="result" class="result-area"></div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script>
+    let fileIds = [];
+    new FileUploader('uploadArea', { onFileSelect: async (files) => { fileIds = []; const list = document.getElementById('fileList'); list.innerHTML = ''; for (const file of files) { const result = await uploadFile(file, '/pdf/upload-image'); if (result.success) { fileIds.push(result.file_id); list.innerHTML += `<p>✓ ${file.name}</p>`; }} if (fileIds.length > 0) document.getElementById('convertBtn').disabled = false; }});
+    async function convert() { if (fileIds.length === 0) return; setLoading('convertBtn', true); const result = await apiRequest(`/pdf/from-images?${fileIds.map(id => `file_ids=${id}`).join('&')}`, { method: 'POST' }); setLoading('convertBtn', false); if (result.success) showResult('result', true, `生成成功！<a href="${result.download_url}" download>点击下载</a>`); else showResult('result', false, result.error_message); }
+  </script>
+</body>
+</html>

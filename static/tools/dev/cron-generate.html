@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线Cron表达式生成器">
+  <title>Cron 生成器 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/dev/cron-generate.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>Cron 表达式生成器</h1><p>可视化生成 Cron 表达式</p></header>
+    <div class="tool-box">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem">
+        <div class="form-group"><label>分钟</label><input type="text" id="minute" class="form-input" value="0"></div>
+        <div class="form-group"><label>小时</label><input type="text" id="hour" class="form-input" value="*"></div>
+        <div class="form-group"><label>日</label><input type="text" id="day" class="form-input" value="*"></div>
+        <div class="form-group"><label>月</label><input type="text" id="month" class="form-input" value="*"></div>
+        <div class="form-group"><label>星期</label><input type="text" id="weekday" class="form-input" value="*"></div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="generateCron()">生成</button>
+      <div id="result" class="result-area"></div>
+      <div class="form-group" style="margin-top:1rem"><label>Cron 表达式</label><input type="text" id="expression" class="form-input" readonly style="font-family:monospace;font-size:1.2rem;text-align:center"></div>
+      <div class="form-group"><label>描述</label><p id="description"></p></div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script>
+    async function generateCron() {
+      const data = {
+        minute: document.getElementById('minute').value,
+        hour: document.getElementById('hour').value,
+        day: document.getElementById('day').value,
+        month: document.getElementById('month').value,
+        weekday: document.getElementById('weekday').value
+      };
+      const result = await apiRequest('/dev/cron-generate', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (result.success) {
+        document.getElementById('expression').value = result.expression;
+        document.getElementById('description').textContent = result.description;
+        showResult('result', true, '生成成功');
+      } else {
+        showResult('result', false, result.error_message);
+      }
+    }
+  </script>
+</body>
+</html>

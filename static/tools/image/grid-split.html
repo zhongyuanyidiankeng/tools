@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线图片网格切割工具">
+  <title>网格切割 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/image/grid-split.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>网格切割</h1><p>按行列切割图片，支持拖拽调整切割线</p></header>
+    <div class="tool-box">
+      <div id="uploadArea" class="upload-area"><input type="file" accept="image/*"><div class="upload-icon">📷</div><p class="upload-text">点击或拖拽上传图片</p></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+        <div class="form-group"><label>行数</label><input type="number" id="rows" class="form-input" value="2" min="1" max="10" onchange="updateGrid()"></div>
+        <div class="form-group"><label>列数</label><input type="number" id="cols" class="form-input" value="2" min="1" max="10" onchange="updateGrid()"></div>
+      </div>
+      <div id="gridContainer" style="margin:1rem 0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden"></div>
+      <p id="grid-info" style="text-align:center;color:#64748b"></p>
+      <button id="splitBtn" class="btn btn-primary btn-block" onclick="split()" disabled>切割图片</button>
+      <div id="splitBtn-loading" class="loading"><span class="spinner"></span> 切割中...</div>
+      <div id="result" class="result-area"></div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/image-grid.js"></script>
+  <script>
+    let fileId = null, gridSplitter = null;
+    new FileUploader('uploadArea', { onFileSelect: async (files) => { const file = files[0]; const result = await uploadFile(file, '/image/upload'); if (result.success) { fileId = result.file_id; document.getElementById('splitBtn').disabled = false; const reader = new FileReader(); reader.onload = (e) => { gridSplitter = new ImageGridSplitter('gridContainer'); gridSplitter.setImage(e.target.result).then(() => updateGrid()); }; reader.readAsDataURL(file); } else showResult('result', false, result.error_message); }});
+    function updateGrid() { if (gridSplitter) gridSplitter.setGrid(parseInt(document.getElementById('rows').value), parseInt(document.getElementById('cols').value)); }
+    async function split() { if (!fileId || !gridSplitter) return; const pos = gridSplitter.getPositions(); setLoading('splitBtn', true); const result = await apiRequest('/image/grid-split', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ file_id: fileId, rows: pos.rows, cols: pos.cols, row_positions: pos.rowPositions, col_positions: pos.colPositions }) }); setLoading('splitBtn', false); if (result.success) { const links = result.download_urls.map((u, i) => `<a href="${u}" download>区块${i+1}</a>`).join(' '); showResult('result', true, `切割成功！${links}`); } else showResult('result', false, result.error_message); }
+  </script>
+</body>
+</html>

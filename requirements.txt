@@ -1,0 +1,26 @@
+# Web 框架
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6
+
+# PDF 处理
+pypdf>=3.17.0
+pdf2docx>=0.5.6
+img2pdf>=0.5.1
+
+# 图像处理
+pillow>=10.1.0
+
+# 文本处理
+markdown>=3.5.0
+python-jose>=3.3.0
+
+# 工具
+python-magic-bin>=0.4.14
+croniter>=2.0.0
+httpx>=0.25.0
+
+# 测试
+pytest>=7.4.0
+hypothesis>=6.92.0
+pytest-asyncio>=0.21.0

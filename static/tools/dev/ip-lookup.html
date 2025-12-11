@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线IP地址查询工具">
+  <title>IP 查询 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/dev/ip-lookup.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>IP 查询</h1><p>查询 IP 地址的地理位置信息</p></header>
+    <div class="tool-box">
+      <div class="form-group"><label>IP 地址</label><input type="text" id="ip" class="form-input" placeholder="8.8.8.8"></div>
+      <button class="btn btn-primary btn-block" onclick="lookupIP()">查询</button>
+      <div id="result" class="result-area"></div>
+      <div id="info" class="code-output" style="margin-top:1rem;display:none"></div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script>
+    async function lookupIP() {
+      const ip = document.getElementById('ip').value.trim();
+      if (!ip) { showResult('result', false, '请输入 IP 地址'); return; }
+      const result = await apiRequest('/dev/ip-lookup', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ ip })
+      });
+      const info = document.getElementById('info');
+      if (result.success) {
+        info.style.display = 'block';
+        info.textContent = `国家: ${result.country}\n地区: ${result.region}\n城市: ${result.city}\nISP: ${result.isp}\n时区: ${result.timezone}`;
+        showResult('result', true, '查询成功');
+      } else {
+        info.style.display = 'none';
+        showResult('result', false, result.error_message);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线PDF转Word工具">
+  <title>PDF 转 Word - 在线工具</title>
+  <link rel="canonical" href="/static/tools/pdf/to-word.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>PDF 转 Word</h1><p>将 PDF 文档转换为可编辑的 Word 文件</p></header>
+    <div class="tool-box">
+      <div id="uploadArea" class="upload-area"><input type="file" accept=".pdf"><div class="upload-icon">📄</div><p class="upload-text">点击或拖拽上传 PDF</p><p id="fileInfo" style="margin-top:0.5rem;color:#3b82f6"></p></div>
+      <button id="convertBtn" class="btn btn-primary btn-block" style="margin-top:1.5rem" onclick="convert()" disabled>转换为 Word</button>
+      <div id="convertBtn-loading" class="loading"><span class="spinner"></span> 转换中...</div>
+      <div id="result" class="result-area"></div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script>
+    let fileId = null;
+    new FileUploader('uploadArea', { onFileSelect: async (files) => { const file = files[0]; document.getElementById('fileInfo').textContent = `${file.name}`; const result = await uploadFile(file, '/pdf/upload'); if (result.success) { fileId = result.file_id; document.getElementById('convertBtn').disabled = false; } else showResult('result', false, result.error_message); }});
+    async function convert() { if (!fileId) return; setLoading('convertBtn', true); const result = await apiRequest(`/pdf/to-word?file_id=${fileId}`, { method: 'POST' }); setLoading('convertBtn', false); if (result.success) showResult('result', true, `转换成功！<a href="${result.download_url}" download>点击下载</a>`); else showResult('result', false, result.error_message); }
+  </script>
+</body>
+</html>

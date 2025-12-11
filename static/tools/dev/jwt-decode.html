@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线JWT解码工具 - 解析JWT Token内容">
+  <title>JWT 解码 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/dev/jwt-decode.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>JWT 解码</h1><p>解析和查看 JWT Token 内容</p></header>
+    <div class="tool-box">
+      <div class="form-group"><label>JWT Token</label><textarea id="token" class="form-textarea" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea></div>
+      <button class="btn btn-primary btn-block" onclick="decodeJWT()">解码</button>
+      <div id="result" class="result-area"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+        <div class="form-group"><label>Header</label><div id="header" class="code-output"></div></div>
+        <div class="form-group"><label>Payload</label><div id="payload" class="code-output"></div></div>
+      </div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script>
+    async function decodeJWT() {
+      const token = document.getElementById('token').value.trim();
+      if (!token) { showResult('result', false, '请输入 JWT Token'); return; }
+      const result = await apiRequest('/dev/jwt-decode', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token })
+      });
+      if (result.success) {
+        document.getElementById('header').textContent = JSON.stringify(result.header, null, 2);
+        document.getElementById('payload').textContent = JSON.stringify(result.payload, null, 2);
+        const status = result.expired ? '⚠️ Token 已过期' : '✅ Token 有效';
+        showResult('result', !result.expired, status);
+      } else {
+        showResult('result', false, result.error_message);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线PDF压缩工具 - 减小PDF文件大小">
+  <title>PDF 压缩 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/pdf/compress.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  <div class="tool-page">
+    <header class="page-header"><h1>PDF 压缩</h1><p>减小 PDF 文件大小，方便分享和存储</p></header>
+    <div class="tool-box">
+      <div id="uploadArea" class="upload-area">
+        <input type="file" accept=".pdf">
+        <div class="upload-icon">📄</div>
+        <p class="upload-text">点击或拖拽上传 PDF</p>
+        <p id="fileInfo" style="margin-top:0.5rem;color:#3b82f6"></p>
+      </div>
+      <button id="compressBtn" class="btn btn-primary btn-block" style="margin-top:1.5rem" onclick="compress()" disabled>压缩 PDF</button>
+      <div id="compressBtn-loading" class="loading"><span class="spinner"></span> 压缩中...</div>
+      <div id="result" class="result-area"></div>
+    </div>
+  </div>
+  <script src="/static/js/common.js"></script>
+  <script>
+    let fileId = null;
+    new FileUploader('uploadArea', {
+      onFileSelect: async (files) => {
+        const file = files[0];
+        document.getElementById('fileInfo').textContent = `${file.name} (${formatFileSize(file.size)})`;
+        const result = await uploadFile(file, '/pdf/upload');
+        if (result.success) { fileId = result.file_id; document.getElementById('compressBtn').disabled = false; }
+        else showResult('result', false, result.error_message);
+      }
+    });
+    async function compress() {
+      if (!fileId) return;
+      setLoading('compressBtn', true);
+      const result = await apiRequest('/pdf/compress', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ file_id: fileId }) });
+      setLoading('compressBtn', false);
+      if (result.success) showResult('result', true, `压缩成功！<a href="${result.download_url}" download>点击下载</a>`);
+      else showResult('result', false, result.error_message);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <!-- PDF 工具 -->
+  <url><loc>/static/tools/pdf/compress.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/pdf/to-word.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/pdf/merge.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/pdf/split.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/pdf/from-images.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <!-- 图片工具 -->
+  <url><loc>/static/tools/image/compress.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/image/resize.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/image/convert.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/image/crop.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/image/grid-split.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/image/split-compress.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/image/to-ico.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <!-- 文本工具 -->
+  <url><loc>/static/tools/text/json-format.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/text/base64.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/text/regex-test.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/text/markdown.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <!-- 开发者工具 -->
+  <url><loc>/static/tools/dev/jwt-decode.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/dev/cron-generate.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/dev/uuid.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/static/tools/dev/ip-lookup.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+</urlset>

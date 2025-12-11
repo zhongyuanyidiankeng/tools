@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线图片压缩工具 - 支持按质量、按文件大小、按宽高三种压缩模式">
+  <title>图片压缩 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/image/compress.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-content">
+      <a href="/" class="nav-logo">🛠️ 在线工具</a>
+    </div>
+  </nav>
+
+  <div class="tool-page">
+    <header class="page-header">
+      <h1>图片压缩</h1>
+      <p>支持按质量、按文件大小、按宽高三种压缩模式</p>
+    </header>
+
+    <div class="tool-box">
+      <div id="uploadArea" class="upload-area">
+        <input type="file" accept="image/*">
+        <div class="upload-icon">📷</div>
+        <p class="upload-text">点击或拖拽上传图片</p>
+        <p id="fileInfo" style="margin-top:0.5rem;color:#3b82f6"></p>
+      </div>
+
+      <!-- 压缩模式选择 -->
+      <div class="form-group" style="margin-top:1.5rem">
+        <label>压缩模式</label>
+        <div style="display:flex;gap:1rem;margin-top:0.5rem">
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="mode" value="quality" checked onchange="switchMode('quality')"> 按质量
+          </label>
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="mode" value="size" onchange="switchMode('size')"> 按文件大小
+          </label>
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="mode" value="dimensions" onchange="switchMode('dimensions')"> 按宽高
+          </label>
+        </div>
+      </div>
+
+      <!-- 按质量压缩 -->
+      <div id="qualityMode" class="mode-panel">
+        <div class="form-group">
+          <label for="quality">压缩质量: <span id="qualityValue">80</span>%</label>
+          <input type="range" id="quality" min="10" max="100" value="80" 
+                 oninput="document.getElementById('qualityValue').textContent=this.value">
+        </div>
+      </div>
+
+      <!-- 按文件大小压缩 -->
+      <div id="sizeMode" class="mode-panel" style="display:none">
+        <div class="form-group">
+          <label for="targetSize">目标文件大小 (KB)</label>
+          <input type="number" id="targetSize" class="form-input" value="100" min="1">
+        </div>
+      </div>
+
+      <!-- 按宽高压缩 -->
+      <div id="dimensionsMode" class="mode-panel" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="maxWidth">最大宽度 (px)</label>
+            <input type="number" id="maxWidth" class="form-input" placeholder="留空不限制" min="1">
+          </div>
+          <div class="form-group">
+            <label for="maxHeight">最大高度 (px)</label>
+            <input type="number" id="maxHeight" class="form-input" placeholder="留空不限制" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="dimQuality">输出质量: <span id="dimQualityValue">85</span>%</label>
+          <input type="range" id="dimQuality" min="10" max="100" value="85" 
+                 oninput="document.getElementById('dimQualityValue').textContent=this.value">
+        </div>
+      </div>
+
+      <button id="compressBtn" class="btn btn-primary btn-block" onclick="compressImage()" disabled>
+        压缩图片
+      </button>
+      <div id="compressBtn-loading" class="loading"><span class="spinner"></span> 压缩中...</div>
+
+      <div id="result" class="result-area"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    let fileId = null;
+    let currentMode = 'quality';
+    
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('qualityMode').style.display = mode === 'quality' ? 'block' : 'none';
+      document.getElementById('sizeMode').style.display = mode === 'size' ? 'block' : 'none';
+      document.getElementById('dimensionsMode').style.display = mode === 'dimensions' ? 'block' : 'none';
+    }
+    
+    const uploader = new FileUploader('uploadArea', {
+      onFileSelect: async (files) => {
+        const file = files[0];
+        document.getElementById('fileInfo').textContent = 
+          `${file.name} (${formatFileSize(file.size)})`;
+        
+        const result = await uploadFile(file, '/image/upload');
+        if (result.success) {
+          fileId = result.file_id;
+          document.getElementById('compressBtn').disabled = false;
+        } else {
+          showResult('result', false, result.error_message || '上传失败');
+        }
+      }
+    });
+    
+    async function compressImage() {
+      if (!fileId) return;
+      
+      setLoading('compressBtn', true);
+      let result;
+      
+      if (currentMode === 'quality') {
+        const quality = parseInt(document.getElementById('quality').value);
+        result = await apiRequest('/image/compress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_id: fileId, quality })
+        });
+      } else if (currentMode === 'size') {
+        const targetSize = parseInt(document.getElementById('targetSize').value);
+        result = await apiRequest('/image/compress-to-size', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_id: fileId, target_size_kb: targetSize })
+        });
+      } else {
+        const maxWidth = document.getElementById('maxWidth').value;
+        const maxHeight = document.getElementById('maxHeight').value;
+        const quality = parseInt(document.getElementById('dimQuality').value);
+        
+        if (!maxWidth && !maxHeight) {
+          setLoading('compressBtn', false);
+          showResult('result', false, '请至少指定最大宽度或最大高度');
+          return;
+        }
+        
+        result = await apiRequest('/image/compress-to-dimensions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            file_id: fileId, 
+            max_width: maxWidth ? parseInt(maxWidth) : null,
+            max_height: maxHeight ? parseInt(maxHeight) : null,
+            quality 
+          })
+        });
+      }
+      
+      setLoading('compressBtn', false);
+      
+      if (result.success) {
+        showResult('result', true, 
+          `压缩成功！<a href="${result.download_url}" download>点击下载</a>`);
+      } else {
+        showResult('result', false, result.error_message || '压缩失败');
+      }
+    }
+  </script>
+</body>
+</html>

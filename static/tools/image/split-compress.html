@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线图片切割并压缩工具 - 支持按行列或按宽高切割，可选按大小或按宽高压缩">
+  <title>切割并压缩 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/image/split-compress.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  
+  <div class="tool-page">
+    <header class="page-header">
+      <h1>切割并压缩</h1>
+      <p>切割图片并压缩每个区块，支持多种切割和压缩模式</p>
+    </header>
+    
+    <div class="tool-box">
+      <div id="uploadArea" class="upload-area">
+        <input type="file" accept="image/*">
+        <div class="upload-icon">📷</div>
+        <p class="upload-text">点击或拖拽上传图片</p>
+        <p id="fileInfo" style="margin-top:0.5rem;color:#3b82f6"></p>
+      </div>
+
+      <!-- 切割模式选择 -->
+      <div class="form-group" style="margin-top:1.5rem">
+        <label>切割模式</label>
+        <div style="display:flex;gap:1rem;margin-top:0.5rem">
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="splitMode" value="grid" checked onchange="switchSplitMode('grid')"> 按行列切割
+          </label>
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="splitMode" value="dimensions" onchange="switchSplitMode('dimensions')"> 按宽高切割
+          </label>
+        </div>
+      </div>
+
+      <!-- 按行列切割 -->
+      <div id="gridSplitMode" class="mode-panel">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="rows">行数</label>
+            <input type="number" id="rows" class="form-input" value="2" min="1" max="10">
+          </div>
+          <div class="form-group">
+            <label for="cols">列数</label>
+            <input type="number" id="cols" class="form-input" value="2" min="1" max="10">
+          </div>
+        </div>
+      </div>
+
+      <!-- 按宽高切割 -->
+      <div id="dimensionsSplitMode" class="mode-panel" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="pieceWidth">每块宽度 (px)</label>
+            <input type="number" id="pieceWidth" class="form-input" value="500" min="1">
+          </div>
+          <div class="form-group">
+            <label for="pieceHeight">每块高度 (px)</label>
+            <input type="number" id="pieceHeight" class="form-input" value="500" min="1">
+          </div>
+        </div>
+      </div>
+
+      <hr style="margin:1.5rem 0;border:none;border-top:1px solid #e5e7eb">
+
+      <!-- 压缩模式选择 -->
+      <div class="form-group">
+        <label>压缩模式</label>
+        <div style="display:flex;gap:1rem;margin-top:0.5rem">
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="compressMode" value="size" checked onchange="switchCompressMode('size')"> 按文件大小
+          </label>
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="compressMode" value="dimensions" onchange="switchCompressMode('dimensions')"> 按宽高
+          </label>
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer">
+            <input type="radio" name="compressMode" value="none" onchange="switchCompressMode('none')"> 不压缩
+          </label>
+        </div>
+      </div>
+
+      <!-- 按文件大小压缩 -->
+      <div id="sizeCompressMode" class="mode-panel">
+        <div class="form-group">
+          <label for="targetSize">目标大小 (KB)</label>
+          <input type="number" id="targetSize" class="form-input" value="100" min="1">
+        </div>
+      </div>
+
+      <!-- 按宽高压缩 -->
+      <div id="dimensionsCompressMode" class="mode-panel" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="maxWidth">每块最大宽度 (px)</label>
+            <input type="number" id="maxWidth" class="form-input" placeholder="留空不限制" min="1">
+          </div>
+          <div class="form-group">
+            <label for="maxHeight">每块最大高度 (px)</label>
+            <input type="number" id="maxHeight" class="form-input" placeholder="留空不限制" min="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- 输出质量 -->
+      <div class="form-group">
+        <label for="quality">输出质量: <span id="qualityValue">85</span>%</label>
+        <input type="range" id="quality" min="10" max="100" value="85" 
+               oninput="document.getElementById('qualityValue').textContent=this.value">
+      </div>
+
+      <button id="processBtn" class="btn btn-primary btn-block" onclick="process()" disabled>
+        切割并压缩
+      </button>
+      <div id="processBtn-loading" class="loading"><span class="spinner"></span> 处理中...</div>
+
+      <div id="result" class="result-area"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    let fileId = null;
+    let splitMode = 'grid';
+    let compressMode = 'size';
+    
+    function switchSplitMode(mode) {
+      splitMode = mode;
+      document.getElementById('gridSplitMode').style.display = mode === 'grid' ? 'block' : 'none';
+      document.getElementById('dimensionsSplitMode').style.display = mode === 'dimensions' ? 'block' : 'none';
+    }
+    
+    function switchCompressMode(mode) {
+      compressMode = mode;
+      document.getElementById('sizeCompressMode').style.display = mode === 'size' ? 'block' : 'none';
+      document.getElementById('dimensionsCompressMode').style.display = mode === 'dimensions' ? 'block' : 'none';
+    }
+    
+    new FileUploader('uploadArea', {
+      onFileSelect: async (files) => {
+        const file = files[0];
+        document.getElementById('fileInfo').textContent = 
+          `${file.name} (${formatFileSize(file.size)})`;
+        
+        const result = await uploadFile(files[0], '/image/upload');
+        if (result.success) {
+          fileId = result.file_id;
+          document.getElementById('processBtn').disabled = false;
+        } else {
+          showResult('result', false, result.error_message);
+        }
+      }
+    });
+    
+    async function process() {
+      if (!fileId) return;
+      
+      setLoading('processBtn', true);
+      let result;
+      
+      const quality = parseInt(document.getElementById('quality').value);
+      
+      if (splitMode === 'grid') {
+        // 按行列切割
+        const data = {
+          file_id: fileId,
+          rows: parseInt(document.getElementById('rows').value),
+          cols: parseInt(document.getElementById('cols').value),
+          target_size_kb: parseInt(document.getElementById('targetSize').value)
+        };
+        
+        result = await apiRequest('/image/split-compress', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+      } else {
+        // 按宽高切割
+        const data = {
+          file_id: fileId,
+          piece_width: parseInt(document.getElementById('pieceWidth').value),
+          piece_height: parseInt(document.getElementById('pieceHeight').value),
+          quality: quality
+        };
+        
+        // 根据压缩模式添加参数
+        if (compressMode === 'size') {
+          data.target_size_kb = parseInt(document.getElementById('targetSize').value);
+        } else if (compressMode === 'dimensions') {
+          const maxWidth = document.getElementById('maxWidth').value;
+          const maxHeight = document.getElementById('maxHeight').value;
+          if (maxWidth) data.max_width = parseInt(maxWidth);
+          if (maxHeight) data.max_height = parseInt(maxHeight);
+        }
+        
+        result = await apiRequest('/image/split-compress-by-dimensions', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+      }
+      
+      setLoading('processBtn', false);
+      
+      if (result.success) {
+        const links = result.download_urls.map((u, i) => 
+          `<a href="${u}" download style="margin-right:0.5rem">区块${i+1}</a>`
+        ).join('');
+        showResult('result', true, `处理成功！共 ${result.download_urls.length} 块<br>${links}`);
+      } else {
+        showResult('result', false, result.error_message);
+      }
+    }
+  </script>
+</body>
+</html>

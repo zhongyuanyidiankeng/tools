@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线UUID生成器 - 生成随机UUID v4标识符">
+  <title>UUID 生成器 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/dev/uuid.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-content">
+      <a href="/" class="nav-logo">🛠️ 在线工具</a>
+    </div>
+  </nav>
+
+  <div class="tool-page">
+    <header class="page-header">
+      <h1>UUID 生成器</h1>
+      <p>生成随机 UUID v4 标识符</p>
+    </header>
+
+    <div class="tool-box">
+      <button id="generateBtn" class="btn btn-primary btn-block" onclick="generateUUID()">
+        生成 UUID
+      </button>
+
+      <div class="form-group" style="margin-top:1.5rem">
+        <label>生成的 UUID</label>
+        <input type="text" id="uuid" class="form-input" readonly style="font-family:monospace;font-size:1.1rem;text-align:center">
+      </div>
+
+      <button class="btn btn-secondary btn-block" onclick="copyUUID()">复制</button>
+
+      <div id="result" class="result-area"></div>
+
+      <div class="form-group" style="margin-top:2rem">
+        <label>批量生成</label>
+        <div style="display:flex;gap:1rem;align-items:center">
+          <input type="number" id="count" class="form-input" value="5" min="1" max="100" style="width:100px">
+          <button class="btn btn-secondary" onclick="generateBatch()">批量生成</button>
+        </div>
+      </div>
+
+      <textarea id="batchOutput" class="form-textarea" readonly style="font-family:monospace;display:none"></textarea>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    async function generateUUID() {
+      const result = await apiRequest('/dev/uuid');
+      if (result.uuid) {
+        document.getElementById('uuid').value = result.uuid;
+      }
+    }
+    
+    function copyUUID() {
+      const uuid = document.getElementById('uuid').value;
+      if (uuid) {
+        copyToClipboard(uuid);
+        showResult('result', true, '已复制到剪贴板！');
+      }
+    }
+    
+    async function generateBatch() {
+      const count = parseInt(document.getElementById('count').value) || 5;
+      const uuids = [];
+      
+      for (let i = 0; i < count; i++) {
+        const result = await apiRequest('/dev/uuid');
+        if (result.uuid) uuids.push(result.uuid);
+      }
+      
+      const output = document.getElementById('batchOutput');
+      output.style.display = 'block';
+      output.value = uuids.join('\n');
+    }
+    
+    // 页面加载时生成一个
+    generateUUID();
+  </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线图片调整尺寸工具 - 调整图片到精确尺寸或按比例缩放">
+  <title>调整尺寸 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/image/resize.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  
+  <div class="tool-page">
+    <header class="page-header">
+      <h1>调整尺寸</h1>
+      <p>调整图片到精确尺寸或按比例缩放</p>
+    </header>
+    
+    <div class="tool-box">
+      <div id="uploadArea" class="upload-area">
+        <input type="file" accept="image/*">
+        <div class="upload-icon">📷</div>
+        <p class="upload-text">点击或拖拽上传图片</p>
+        <p id="fileInfo" style="margin-top:0.5rem;color:#3b82f6"></p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem">
+        <div class="form-group">
+          <label for="width">目标宽度 (px)</label>
+          <input type="number" id="width" class="form-input" value="800" min="1">
+        </div>
+        <div class="form-group">
+          <label for="height">目标高度 (px)</label>
+          <input type="number" id="height" class="form-input" value="600" min="1">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+          <input type="checkbox" id="keepAspect" checked>
+          保持宽高比（图片会缩放到指定尺寸内，不会变形）
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="quality">输出质量: <span id="qualityValue">85</span>%</label>
+        <input type="range" id="quality" min="10" max="100" value="85" 
+               oninput="document.getElementById('qualityValue').textContent=this.value">
+      </div>
+
+      <button id="resizeBtn" class="btn btn-primary btn-block" onclick="resizeImage()" disabled>
+        调整尺寸
+      </button>
+      <div id="resizeBtn-loading" class="loading"><span class="spinner"></span> 处理中...</div>
+
+      <div id="result" class="result-area"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    let fileId = null;
+    
+    new FileUploader('uploadArea', {
+      onFileSelect: async (files) => {
+        const file = files[0];
+        document.getElementById('fileInfo').textContent = 
+          `${file.name} (${formatFileSize(file.size)})`;
+        
+        const result = await uploadFile(file, '/image/upload');
+        if (result.success) {
+          fileId = result.file_id;
+          document.getElementById('resizeBtn').disabled = false;
+        } else {
+          showResult('result', false, result.error_message || '上传失败');
+        }
+      }
+    });
+    
+    async function resizeImage() {
+      if (!fileId) return;
+      
+      const width = parseInt(document.getElementById('width').value);
+      const height = parseInt(document.getElementById('height').value);
+      const keepAspect = document.getElementById('keepAspect').checked;
+      const quality = parseInt(document.getElementById('quality').value);
+      
+      setLoading('resizeBtn', true);
+      
+      const result = await apiRequest('/image/resize-exact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          file_id: fileId, 
+          width, 
+          height, 
+          keep_aspect: keepAspect,
+          quality 
+        })
+      });
+      
+      setLoading('resizeBtn', false);
+      
+      if (result.success) {
+        showResult('result', true, 
+          `调整成功！<a href="${result.download_url}" download>点击下载</a>`);
+      } else {
+        showResult('result', false, result.error_message || '处理失败');
+      }
+    }
+  </script>
+</body>
+</html>
