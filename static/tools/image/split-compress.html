@@ -43,14 +43,18 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
           <div class="form-group">
             <label for="rows">行数</label>
-            <input type="number" id="rows" class="form-input" value="2" min="1" max="10">
+            <input type="number" id="rows" class="form-input" value="2" min="1" max="10" onchange="updateGrid()">
           </div>
           <div class="form-group">
             <label for="cols">列数</label>
-            <input type="number" id="cols" class="form-input" value="2" min="1" max="10">
+            <input type="number" id="cols" class="form-input" value="2" min="1" max="10" onchange="updateGrid()">
           </div>
         </div>
       </div>
+
+      <!-- 图片预览和切割线 -->
+      <div id="gridContainer" style="margin:1rem 0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden"></div>
+      <p id="grid-info" style="text-align:center;color:#64748b"></p>
 
       <!-- 按宽高切割 -->
       <div id="dimensionsSplitMode" class="mode-panel" style="display:none">
@@ -123,15 +127,29 @@
   </div>
 
   <script src="/static/js/common.js"></script>
+  <script src="/static/js/image-grid.js"></script>
   <script>
     let fileId = null;
     let splitMode = 'grid';
     let compressMode = 'size';
+    let gridSplitter = null;
+    let currentImageData = null;
     
     function switchSplitMode(mode) {
       splitMode = mode;
       document.getElementById('gridSplitMode').style.display = mode === 'grid' ? 'block' : 'none';
       document.getElementById('dimensionsSplitMode').style.display = mode === 'dimensions' ? 'block' : 'none';
+      document.getElementById('gridContainer').style.display = mode === 'grid' ? 'block' : 'none';
+      document.getElementById('grid-info').style.display = mode === 'grid' ? 'block' : 'none';
+    }
+    
+    function updateGrid() {
+      if (gridSplitter) {
+        gridSplitter.setGrid(
+          parseInt(document.getElementById('rows').value),
+          parseInt(document.getElementById('cols').value)
+        );
+      }
     }
     
     function switchCompressMode(mode) {
@@ -150,6 +168,15 @@
         if (result.success) {
           fileId = result.file_id;
           document.getElementById('processBtn').disabled = false;
+          
+          // 显示图片预览和切割线
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            currentImageData = e.target.result;
+            gridSplitter = new ImageGridSplitter('gridContainer');
+            gridSplitter.setImage(currentImageData).then(() => updateGrid());
+          };
+          reader.readAsDataURL(file);
         } else {
           showResult('result', false, result.error_message);
         }

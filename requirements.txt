@@ -16,7 +16,8 @@ markdown>=3.5.0
 python-jose>=3.3.0
 
 # 工具
-python-magic-bin>=0.4.14
+# Windows 使用 python-magic-bin, Linux 使用 python-magic + libmagic
+python-magic>=0.4.27
 croniter>=2.0.0
 httpx>=0.25.0
 

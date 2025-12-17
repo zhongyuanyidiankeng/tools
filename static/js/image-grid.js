@@ -138,7 +138,8 @@ class ImageGridSplitter {
       const currentPos = type === 'horizontal' ? e.clientY : e.clientX;
       const delta = (currentPos - startPos) / size;
       
-      let newValue = Math.max(0.05, Math.min(0.95, startValue + delta));
+      // 允许拖拽到边缘，但保留最小间距防止完全重叠
+      let newValue = Math.max(0.01, Math.min(0.99, startValue + delta));
       
       if (type === 'horizontal') {
         this.rowPositions[index] = newValue;
