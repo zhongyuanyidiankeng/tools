@@ -144,11 +144,14 @@
     }
     
     function updateGrid() {
+      console.log('[split-compress] updateGrid 调用, gridSplitter:', gridSplitter);
       if (gridSplitter) {
-        gridSplitter.setGrid(
-          parseInt(document.getElementById('rows').value),
-          parseInt(document.getElementById('cols').value)
-        );
+        const rows = parseInt(document.getElementById('rows').value);
+        const cols = parseInt(document.getElementById('cols').value);
+        console.log('[split-compress] 设置网格:', rows, 'x', cols);
+        gridSplitter.setGrid(rows, cols);
+      } else {
+        console.warn('[split-compress] gridSplitter 未初始化');
       }
     }
     
@@ -160,24 +163,50 @@
     
     new FileUploader('uploadArea', {
       onFileSelect: async (files) => {
+        console.log('[split-compress] 文件选择触发, 文件数:', files.length);
         const file = files[0];
+        console.log('[split-compress] 文件信息:', file.name, file.size, file.type);
         document.getElementById('fileInfo').textContent = 
           `${file.name} (${formatFileSize(file.size)})`;
         
+        console.log('[split-compress] 开始上传文件...');
         const result = await uploadFile(files[0], '/image/upload');
+        console.log('[split-compress] 上传结果:', result);
+        
         if (result.success) {
           fileId = result.file_id;
+          console.log('[split-compress] 上传成功, fileId:', fileId);
           document.getElementById('processBtn').disabled = false;
           
           // 显示图片预览和切割线
+          console.log('[split-compress] 开始读取图片数据...');
           const reader = new FileReader();
           reader.onload = (e) => {
+            console.log('[split-compress] FileReader 加载完成, 数据长度:', e.target.result.length);
             currentImageData = e.target.result;
-            gridSplitter = new ImageGridSplitter('gridContainer');
-            gridSplitter.setImage(currentImageData).then(() => updateGrid());
+            
+            console.log('[split-compress] 检查 ImageGridSplitter 是否存在:', typeof ImageGridSplitter);
+            console.log('[split-compress] 检查 gridContainer 元素:', document.getElementById('gridContainer'));
+            
+            try {
+              gridSplitter = new ImageGridSplitter('gridContainer');
+              console.log('[split-compress] ImageGridSplitter 创建成功');
+              gridSplitter.setImage(currentImageData).then(() => {
+                console.log('[split-compress] 图片设置成功, 调用 updateGrid');
+                updateGrid();
+              }).catch(err => {
+                console.error('[split-compress] setImage 失败:', err);
+              });
+            } catch (err) {
+              console.error('[split-compress] 创建 ImageGridSplitter 失败:', err);
+            }
+          };
+          reader.onerror = (err) => {
+            console.error('[split-compress] FileReader 错误:', err);
           };
           reader.readAsDataURL(file);
         } else {
+          console.error('[split-compress] 上传失败:', result.error_message);
           showResult('result', false, result.error_message);
         }
       }

@@ -4,7 +4,9 @@
  */
 class ImageGridSplitter {
   constructor(containerId, options = {}) {
+    console.log('[ImageGridSplitter] 构造函数, containerId:', containerId);
     this.container = document.getElementById(containerId);
+    console.log('[ImageGridSplitter] container 元素:', this.container);
     this.rows = options.rows || 2;
     this.cols = options.cols || 2;
     this.image = null;
@@ -16,23 +18,35 @@ class ImageGridSplitter {
   }
   
   init() {
+    console.log('[ImageGridSplitter] init 调用');
+    if (!this.container) {
+      console.error('[ImageGridSplitter] container 不存在!');
+      return;
+    }
     this.container.style.position = 'relative';
     this.container.style.userSelect = 'none';
   }
   
   setImage(imageSrc) {
-    return new Promise((resolve) => {
+    console.log('[ImageGridSplitter] setImage 调用, src长度:', imageSrc ? imageSrc.length : 0);
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
+        console.log('[ImageGridSplitter] 图片加载成功, 尺寸:', img.width, 'x', img.height);
         this.image = img;
         this.render();
         resolve();
+      };
+      img.onerror = (err) => {
+        console.error('[ImageGridSplitter] 图片加载失败:', err);
+        reject(err);
       };
       img.src = imageSrc;
     });
   }
   
   setGrid(rows, cols) {
+    console.log('[ImageGridSplitter] setGrid 调用:', rows, 'x', cols);
     this.rows = rows;
     this.cols = cols;
     this.rowPositions = [];
@@ -46,11 +60,17 @@ class ImageGridSplitter {
       this.colPositions.push(i / cols);
     }
     
+    console.log('[ImageGridSplitter] rowPositions:', this.rowPositions);
+    console.log('[ImageGridSplitter] colPositions:', this.colPositions);
     this.render();
   }
   
   render() {
-    if (!this.image) return;
+    console.log('[ImageGridSplitter] render 调用, image:', this.image ? '存在' : '不存在');
+    if (!this.image) {
+      console.warn('[ImageGridSplitter] 没有图片，跳过渲染');
+      return;
+    }
     
     this.container.innerHTML = '';
     
@@ -60,14 +80,17 @@ class ImageGridSplitter {
     
     // 计算显示尺寸
     const maxWidth = this.container.clientWidth || 600;
+    console.log('[ImageGridSplitter] container宽度:', this.container.clientWidth, '使用maxWidth:', maxWidth);
     const scale = Math.min(1, maxWidth / this.image.width);
     canvas.width = this.image.width * scale;
     canvas.height = this.image.height * scale;
+    console.log('[ImageGridSplitter] canvas尺寸:', canvas.width, 'x', canvas.height, 'scale:', scale);
     
     // 绘制图片
     ctx.drawImage(this.image, 0, 0, canvas.width, canvas.height);
     
     this.container.appendChild(canvas);
+    console.log('[ImageGridSplitter] canvas 已添加到容器');
     
     // 绘制切割线
     this.drawLines(canvas);
@@ -76,17 +99,21 @@ class ImageGridSplitter {
   drawLines(canvas) {
     const width = canvas.width;
     const height = canvas.height;
+    console.log('[ImageGridSplitter] drawLines, canvas尺寸:', width, 'x', height);
+    console.log('[ImageGridSplitter] 行线数量:', this.rowPositions.length, '列线数量:', this.colPositions.length);
     
     // 行切割线
     this.rowPositions.forEach((pos, index) => {
       const line = this.createLine('horizontal', pos * height, width, index);
       this.container.appendChild(line);
+      console.log('[ImageGridSplitter] 添加行线', index, '位置:', pos * height);
     });
     
     // 列切割线
     this.colPositions.forEach((pos, index) => {
       const line = this.createLine('vertical', pos * width, height, index);
       this.container.appendChild(line);
+      console.log('[ImageGridSplitter] 添加列线', index, '位置:', pos * width);
     });
     
     // 显示网格预览
