@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="在线网盘资源搜索工具">
+  <title>网盘搜索 - 在线工具</title>
+  <link rel="canonical" href="/static/tools/dev/pan-search.html">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .search-box { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .search-box input { flex: 1; }
+    .search-type { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .search-type label { display: flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+    .result-list { margin-top: 1rem; }
+    .result-item { 
+      padding: 1rem; 
+      border: 1px solid #e2e8f0; 
+      border-radius: 8px; 
+      margin-bottom: 0.75rem;
+      transition: box-shadow 0.2s;
+    }
+    .result-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .result-title { font-weight: 600; color: #1e40af; margin-bottom: 0.5rem; word-break: break-all; }
+    .result-title a { color: inherit; text-decoration: none; }
+    .result-title a:hover { text-decoration: underline; }
+    .result-meta { font-size: 0.875rem; color: #64748b; }
+    .result-meta span { margin-right: 1rem; }
+    .pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+    .pagination button { min-width: 40px; }
+    .loading-text { text-align: center; color: #64748b; padding: 2rem; }
+    .no-result { text-align: center; color: #64748b; padding: 2rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
+  
+  <div class="tool-page">
+    <header class="page-header">
+      <h1>网盘搜索</h1>
+      <p>搜索网盘资源，支持多种网盘类型</p>
+    </header>
+    
+    <div class="tool-box">
+      <div class="search-box">
+        <input type="text" id="keyword" class="form-input" placeholder="输入搜索关键词..." onkeypress="if(event.key==='Enter')search()">
+        <button class="btn btn-primary" onclick="search()">搜索</button>
+      </div>
+      
+      <div class="search-type">
+        <label><input type="radio" name="panType" value="" checked> 全部</label>
+        <label><input type="radio" name="panType" value="aliyundrive"> 阿里云盘</label>
+        <label><input type="radio" name="panType" value="quark"> 夸克网盘</label>
+        <label><input type="radio" name="panType" value="baiduyun"> 百度网盘</label>
+      </div>
+      
+      <div id="result" class="result-list"></div>
+      
+      <div id="pagination" class="pagination" style="display:none">
+        <button class="btn" onclick="changePage(-1)" id="prevBtn">上一页</button>
+        <span id="pageInfo" style="line-height:36px;padding:0 1rem"></span>
+        <button class="btn" onclick="changePage(1)" id="nextBtn">下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    let currentPage = 1;
+    let currentKeyword = '';
+    let totalPages = 1;
+    
+    function getSelectedType() {
+      const selected = document.querySelector('input[name="panType"]:checked');
+      return selected ? selected.value : '';
+    }
+    
+    async function search(page = 1) {
+      const keyword = document.getElementById('keyword').value.trim();
+      if (!keyword) {
+        document.getElementById('result').innerHTML = '<div class="no-result">请输入搜索关键词</div>';
+        return;
+      }
+      
+      currentKeyword = keyword;
+      currentPage = page;
+      
+      document.getElementById('result').innerHTML = '<div class="loading-text">搜索中...</div>';
+      document.getElementById('pagination').style.display = 'none';
+      
+      const panType = getSelectedType();
+      const result = await apiRequest('/dev/pan-search', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ keyword, page, pan_type: panType })
+      });
+      
+      if (result.success && result.data && result.data.length > 0) {
+        renderResults(result.data);
+        totalPages = result.total_pages || 1;
+        updatePagination();
+      } else if (result.success) {
+        document.getElementById('result').innerHTML = '<div class="no-result">未找到相关资源</div>';
+      } else {
+        document.getElementById('result').innerHTML = `<div class="no-result">搜索失败: ${result.error_message || '未知错误'}</div>`;
+      }
+    }
+    
+    function renderResults(data) {
+      const html = data.map(item => `
+        <div class="result-item">
+          <div class="result-title"><a href="${item.url}" target="_blank">${escapeHtml(item.title)}</a></div>
+          <div class="result-meta">
+            <span>📁 ${item.pan_type || '网盘'}</span>
+            ${item.size ? `<span>📦 ${item.size}</span>` : ''}
+            ${item.time ? `<span>🕐 ${item.time}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('result').innerHTML = html;
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function updatePagination() {
+      document.getElementById('pagination').style.display = 'flex';
+      document.getElementById('pageInfo').textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+      document.getElementById('prevBtn').disabled = currentPage <= 1;
+      document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    }
+    
+    function changePage(delta) {
+      const newPage = currentPage + delta;
+      if (newPage >= 1 && newPage <= totalPages) {
+        search(newPage);
+      }
+    }
+  </script>
+</body>
+</html>

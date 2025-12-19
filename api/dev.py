@@ -60,6 +60,19 @@ class IPLookupResponse(BaseModel):
     error_message: Optional[str] = None
 
 
+class PanSearchRequest(BaseModel):
+    keyword: str
+    page: int = 1
+    pan_type: str = ""
+
+
+class PanSearchResponse(BaseModel):
+    success: bool
+    data: list = []
+    total_pages: int = 1
+    error_message: Optional[str] = None
+
+
 # ============ API 端点 ============
 
 @router.post("/jwt-decode", response_model=JWTDecodeResponse)
@@ -117,5 +130,21 @@ async def lookup_ip(request: IPLookupRequest):
         city=result.city,
         isp=result.isp,
         timezone=result.timezone,
+        error_message=result.error_message
+    )
+
+
+@router.post("/pan-search", response_model=PanSearchResponse)
+async def search_pan(request: PanSearchRequest):
+    """网盘资源搜索"""
+    result = await dev_service.search_pan(
+        keyword=request.keyword,
+        page=request.page,
+        pan_type=request.pan_type
+    )
+    return PanSearchResponse(
+        success=result.success,
+        data=result.data,
+        total_pages=result.total_pages,
         error_message=result.error_message
     )

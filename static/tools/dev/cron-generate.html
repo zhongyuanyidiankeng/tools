@@ -7,27 +7,168 @@
   <title>Cron 生成器 - 在线工具</title>
   <link rel="canonical" href="/static/tools/dev/cron-generate.html">
   <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .cron-presets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .cron-presets button { font-size: 0.875rem; padding: 0.4rem 0.8rem; }
+    .field-type { margin-top: 0.5rem; }
+    .field-type select { width: 100%; padding: 0.4rem; border: 1px solid #e2e8f0; border-radius: 4px; }
+    .next-runs { margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px; }
+    .next-runs h4 { margin: 0 0 0.5rem 0; color: #475569; font-size: 0.9rem; }
+    .next-runs ul { margin: 0; padding-left: 1.5rem; }
+    .next-runs li { color: #64748b; font-family: monospace; margin: 0.3rem 0; }
+    .cron-help { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
+  </style>
 </head>
 <body>
   <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
   <div class="tool-page">
-    <header class="page-header"><h1>Cron 表达式生成器</h1><p>可视化生成 Cron 表达式</p></header>
+    <header class="page-header"><h1>Cron 表达式生成器</h1><p>可视化生成 Cron 表达式，支持多种匹配模式</p></header>
     <div class="tool-box">
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem">
-        <div class="form-group"><label>分钟</label><input type="text" id="minute" class="form-input" value="0"></div>
-        <div class="form-group"><label>小时</label><input type="text" id="hour" class="form-input" value="*"></div>
-        <div class="form-group"><label>日</label><input type="text" id="day" class="form-input" value="*"></div>
-        <div class="form-group"><label>月</label><input type="text" id="month" class="form-input" value="*"></div>
-        <div class="form-group"><label>星期</label><input type="text" id="weekday" class="form-input" value="*"></div>
+      <!-- 快捷预设 -->
+      <div class="form-group">
+        <label>快捷预设</label>
+        <div class="cron-presets">
+          <button class="btn" onclick="setPreset('0 * * * *')">每小时</button>
+          <button class="btn" onclick="setPreset('0 0 * * *')">每天0点</button>
+          <button class="btn" onclick="setPreset('0 8 * * *')">每天8点</button>
+          <button class="btn" onclick="setPreset('0 0 * * 1')">每周一</button>
+          <button class="btn" onclick="setPreset('0 0 1 * *')">每月1号</button>
+          <button class="btn" onclick="setPreset('*/5 * * * *')">每5分钟</button>
+          <button class="btn" onclick="setPreset('0 */2 * * *')">每2小时</button>
+          <button class="btn" onclick="setPreset('30 4 * * *')">每天4:30</button>
+        </div>
       </div>
-      <button class="btn btn-primary btn-block" onclick="generateCron()">生成</button>
+
+      <!-- Cron 字段 -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem">
+        <div class="form-group">
+          <label>分钟 (0-59)</label>
+          <div class="field-type">
+            <select id="minute_type" onchange="updateFieldInput('minute')">
+              <option value="*">每分钟 (*)</option>
+              <option value="specific" selected>指定值</option>
+              <option value="range">范围 (x-y)</option>
+              <option value="step">间隔 (*/n)</option>
+              <option value="list">列表 (x,y,z)</option>
+            </select>
+          </div>
+          <input type="text" id="minute" class="form-input" value="0" style="margin-top:0.5rem">
+          <div class="cron-help">0-59</div>
+        </div>
+        <div class="form-group">
+          <label>小时 (0-23)</label>
+          <div class="field-type">
+            <select id="hour_type" onchange="updateFieldInput('hour')">
+              <option value="*" selected>每小时 (*)</option>
+              <option value="specific">指定值</option>
+              <option value="range">范围 (x-y)</option>
+              <option value="step">间隔 (*/n)</option>
+              <option value="list">列表 (x,y,z)</option>
+            </select>
+          </div>
+          <input type="text" id="hour" class="form-input" value="*" style="margin-top:0.5rem">
+          <div class="cron-help">0-23</div>
+        </div>
+        <div class="form-group">
+          <label>日 (1-31)</label>
+          <div class="field-type">
+            <select id="day_type" onchange="updateFieldInput('day')">
+              <option value="*" selected>每天 (*)</option>
+              <option value="specific">指定值</option>
+              <option value="range">范围 (x-y)</option>
+              <option value="step">间隔 (*/n)</option>
+              <option value="list">列表 (x,y,z)</option>
+            </select>
+          </div>
+          <input type="text" id="day" class="form-input" value="*" style="margin-top:0.5rem">
+          <div class="cron-help">1-31</div>
+        </div>
+        <div class="form-group">
+          <label>月 (1-12)</label>
+          <div class="field-type">
+            <select id="month_type" onchange="updateFieldInput('month')">
+              <option value="*" selected>每月 (*)</option>
+              <option value="specific">指定值</option>
+              <option value="range">范围 (x-y)</option>
+              <option value="step">间隔 (*/n)</option>
+              <option value="list">列表 (x,y,z)</option>
+            </select>
+          </div>
+          <input type="text" id="month" class="form-input" value="*" style="margin-top:0.5rem">
+          <div class="cron-help">1-12</div>
+        </div>
+        <div class="form-group">
+          <label>星期 (0-6)</label>
+          <div class="field-type">
+            <select id="weekday_type" onchange="updateFieldInput('weekday')">
+              <option value="*" selected>每天 (*)</option>
+              <option value="specific">指定值</option>
+              <option value="range">范围 (x-y)</option>
+              <option value="list">列表 (x,y,z)</option>
+            </select>
+          </div>
+          <input type="text" id="weekday" class="form-input" value="*" style="margin-top:0.5rem">
+          <div class="cron-help">0=周日, 1-6=周一至周六</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="generateCron()">生成并计算执行时间</button>
       <div id="result" class="result-area"></div>
-      <div class="form-group" style="margin-top:1rem"><label>Cron 表达式</label><input type="text" id="expression" class="form-input" readonly style="font-family:monospace;font-size:1.2rem;text-align:center"></div>
-      <div class="form-group"><label>描述</label><p id="description"></p></div>
+      
+      <div class="form-group" style="margin-top:1rem">
+        <label>Cron 表达式</label>
+        <input type="text" id="expression" class="form-input" readonly style="font-family:monospace;font-size:1.2rem;text-align:center">
+      </div>
+      <div class="form-group"><label>描述</label><p id="description" style="color:#475569"></p></div>
+      
+      <!-- 最近执行时间 -->
+      <div id="nextRunsContainer" class="next-runs" style="display:none">
+        <h4>📅 最近 5 次执行时间</h4>
+        <ul id="nextRunsList"></ul>
+      </div>
     </div>
   </div>
   <script src="/static/js/common.js"></script>
   <script>
+    function setPreset(expr) {
+      const parts = expr.split(' ');
+      document.getElementById('minute').value = parts[0];
+      document.getElementById('hour').value = parts[1];
+      document.getElementById('day').value = parts[2];
+      document.getElementById('month').value = parts[3];
+      document.getElementById('weekday').value = parts[4];
+      // 更新类型选择器
+      updateTypeSelector('minute', parts[0]);
+      updateTypeSelector('hour', parts[1]);
+      updateTypeSelector('day', parts[2]);
+      updateTypeSelector('month', parts[3]);
+      updateTypeSelector('weekday', parts[4]);
+      generateCron();
+    }
+    
+    function updateTypeSelector(field, value) {
+      const select = document.getElementById(field + '_type');
+      if (value === '*') select.value = '*';
+      else if (value.includes('/')) select.value = 'step';
+      else if (value.includes('-')) select.value = 'range';
+      else if (value.includes(',')) select.value = 'list';
+      else select.value = 'specific';
+    }
+    
+    function updateFieldInput(field) {
+      const type = document.getElementById(field + '_type').value;
+      const input = document.getElementById(field);
+      const defaults = { minute: '0', hour: '0', day: '1', month: '1', weekday: '0' };
+      
+      switch(type) {
+        case '*': input.value = '*'; break;
+        case 'specific': input.value = defaults[field]; break;
+        case 'range': input.value = field === 'minute' ? '0-30' : field === 'hour' ? '9-17' : '1-15'; break;
+        case 'step': input.value = field === 'minute' ? '*/5' : '*/2'; break;
+        case 'list': input.value = field === 'weekday' ? '1,3,5' : '1,15'; break;
+      }
+    }
+    
     async function generateCron() {
       const data = {
         minute: document.getElementById('minute').value,
@@ -44,9 +185,28 @@
         document.getElementById('expression').value = result.expression;
         document.getElementById('description').textContent = result.description;
         showResult('result', true, '生成成功');
+        
+        // 显示最近执行时间
+        if (result.next_runs && result.next_runs.length > 0) {
+          document.getElementById('nextRunsContainer').style.display = 'block';
+          const list = document.getElementById('nextRunsList');
+          list.innerHTML = result.next_runs.map(time => {
+            const date = new Date(time);
+            return `<li>${formatDateTime(date)}</li>`;
+          }).join('');
+        } else {
+          document.getElementById('nextRunsContainer').style.display = 'none';
+        }
       } else {
         showResult('result', false, result.error_message);
+        document.getElementById('nextRunsContainer').style.display = 'none';
       }
+    }
+    
+    function formatDateTime(date) {
+      const pad = n => n.toString().padStart(2, '0');
+      const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())} (${weekdays[date.getDay()]})`;
     }
   </script>
 </body>

@@ -63,6 +63,19 @@ class IPInfo:
     error_message: Optional[str] = None
 
 
+@dataclass
+class PanSearchResult:
+    """网盘搜索结果"""
+    success: bool
+    data: list = None
+    total_pages: int = 1
+    error_message: Optional[str] = None
+    
+    def __post_init__(self):
+        if self.data is None:
+            self.data = []
+
+
 class DevService:
     """开发者工具服务"""
     
@@ -220,6 +233,75 @@ class DevService:
                     )
         except Exception as e:
             return IPInfo(success=False, error_message=str(e))
+    
+    async def search_pan(self, keyword: str, page: int = 1, pan_type: str = "") -> PanSearchResult:
+        """
+        搜索网盘资源
+        参考 pansou 项目的 API 接口
+        """
+        if not HAS_HTTPX:
+            return PanSearchResult(
+                success=False,
+                error_message="httpx not installed"
+            )
+        
+        try:
+            # 使用 pansou API (无需 token 版本)
+            url = "http://localhost:8888/api/search"
+            params = {
+                "keyword": keyword,
+                "page": page,
+                "pan": pan_type  # 空字符串表示全部
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url,
+                    params=params,
+                    timeout=15.0,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    }
+                )
+                
+                if response.status_code != 200:
+                    return PanSearchResult(
+                        success=False,
+                        error_message=f"API 请求失败: {response.status_code}"
+                    )
+                
+                data = response.json()
+                
+                # 解析返回数据
+                if data.get("code") == 200 or data.get("success"):
+                    items = data.get("data", {}).get("list", []) or data.get("list", [])
+                    total = data.get("data", {}).get("total", 0) or data.get("total", 0)
+                    page_size = 20
+                    total_pages = max(1, (total + page_size - 1) // page_size)
+                    
+                    results = []
+                    for item in items:
+                        results.append({
+                            "title": item.get("title", item.get("name", "")),
+                            "url": item.get("url", item.get("link", "")),
+                            "pan_type": item.get("pan", item.get("source", "")),
+                            "size": item.get("size", ""),
+                            "time": item.get("time", item.get("date", ""))
+                        })
+                    
+                    return PanSearchResult(
+                        success=True,
+                        data=results,
+                        total_pages=total_pages
+                    )
+                else:
+                    return PanSearchResult(
+                        success=False,
+                        error_message=data.get("msg", "搜索失败")
+                    )
+                    
+        except Exception as e:
+            return PanSearchResult(success=False, error_message=str(e))
 
 
 # 全局服务实例
