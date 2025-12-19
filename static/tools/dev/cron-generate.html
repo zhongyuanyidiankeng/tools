@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="在线Cron表达式生成器">
+  <meta name="description" content="在线Cron表达式生成器，支持6字段和7字段格式">
   <title>Cron 生成器 - 在线工具</title>
   <link rel="canonical" href="/static/tools/dev/cron-generate.html">
   <link rel="stylesheet" href="/static/css/style.css">
@@ -17,30 +17,66 @@
     .next-runs ul { margin: 0; padding-left: 1.5rem; }
     .next-runs li { color: #64748b; font-family: monospace; margin: 0.3rem 0; }
     .cron-help { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
+    .cron-format { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .cron-format label { display: flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+    .cron-fields { display: grid; gap: 1rem; }
+    .cron-fields.fields-5 { grid-template-columns: repeat(5, 1fr); }
+    .cron-fields.fields-6 { grid-template-columns: repeat(6, 1fr); }
+    .cron-fields.fields-7 { grid-template-columns: repeat(7, 1fr); }
+    @media (max-width: 768px) {
+      .cron-fields { grid-template-columns: repeat(3, 1fr) !important; }
+    }
   </style>
 </head>
 <body>
   <nav class="nav"><div class="container nav-content"><a href="/" class="nav-logo">🛠️ 在线工具</a></div></nav>
   <div class="tool-page">
-    <header class="page-header"><h1>Cron 表达式生成器</h1><p>可视化生成 Cron 表达式，支持多种匹配模式</p></header>
+    <header class="page-header"><h1>Cron 表达式生成器</h1><p>可视化生成 Cron 表达式，支持多种格式和匹配模式</p></header>
     <div class="tool-box">
+      <!-- Cron 格式选择 -->
+      <div class="form-group">
+        <label>Cron 格式</label>
+        <div class="cron-format">
+          <label><input type="radio" name="cronFormat" value="5" checked onchange="switchFormat(5)"> 标准5字段 (分 时 日 月 周)</label>
+          <label><input type="radio" name="cronFormat" value="6" onchange="switchFormat(6)"> 6字段 (秒 分 时 日 月 周)</label>
+          <label><input type="radio" name="cronFormat" value="7" onchange="switchFormat(7)"> 7字段 (秒 分 时 日 月 周 年)</label>
+        </div>
+      </div>
+
       <!-- 快捷预设 -->
       <div class="form-group">
         <label>快捷预设</label>
         <div class="cron-presets">
-          <button class="btn" onclick="setPreset('0 * * * *')">每小时</button>
-          <button class="btn" onclick="setPreset('0 0 * * *')">每天0点</button>
-          <button class="btn" onclick="setPreset('0 8 * * *')">每天8点</button>
-          <button class="btn" onclick="setPreset('0 0 * * 1')">每周一</button>
-          <button class="btn" onclick="setPreset('0 0 1 * *')">每月1号</button>
-          <button class="btn" onclick="setPreset('*/5 * * * *')">每5分钟</button>
-          <button class="btn" onclick="setPreset('0 */2 * * *')">每2小时</button>
-          <button class="btn" onclick="setPreset('30 4 * * *')">每天4:30</button>
+          <button class="btn" onclick="setPreset('every-minute')">每分钟</button>
+          <button class="btn" onclick="setPreset('every-hour')">每小时</button>
+          <button class="btn" onclick="setPreset('every-day')">每天0点</button>
+          <button class="btn" onclick="setPreset('every-day-8')">每天8点</button>
+          <button class="btn" onclick="setPreset('every-monday')">每周一</button>
+          <button class="btn" onclick="setPreset('every-month')">每月1号</button>
+          <button class="btn" onclick="setPreset('every-5min')">每5分钟</button>
+          <button class="btn" onclick="setPreset('every-30sec')">每30秒</button>
         </div>
       </div>
 
       <!-- Cron 字段 -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem">
+      <div id="cronFields" class="cron-fields fields-5">
+        <!-- 秒 (6/7字段模式) -->
+        <div class="form-group" id="secondField" style="display:none">
+          <label>秒 (0-59)</label>
+          <div class="field-type">
+            <select id="second_type" onchange="updateFieldInput('second')">
+              <option value="*">每秒 (*)</option>
+              <option value="specific" selected>指定值</option>
+              <option value="range">范围 (x-y)</option>
+              <option value="step">间隔 (*/n)</option>
+              <option value="list">列表 (x,y,z)</option>
+            </select>
+          </div>
+          <input type="text" id="second" class="form-input" value="0" style="margin-top:0.5rem">
+          <div class="cron-help">0-59</div>
+        </div>
+
+        <!-- 分钟 -->
         <div class="form-group">
           <label>分钟 (0-59)</label>
           <div class="field-type">
@@ -55,6 +91,8 @@
           <input type="text" id="minute" class="form-input" value="0" style="margin-top:0.5rem">
           <div class="cron-help">0-59</div>
         </div>
+
+        <!-- 小时 -->
         <div class="form-group">
           <label>小时 (0-23)</label>
           <div class="field-type">
@@ -69,6 +107,8 @@
           <input type="text" id="hour" class="form-input" value="*" style="margin-top:0.5rem">
           <div class="cron-help">0-23</div>
         </div>
+
+        <!-- 日 -->
         <div class="form-group">
           <label>日 (1-31)</label>
           <div class="field-type">
@@ -83,6 +123,8 @@
           <input type="text" id="day" class="form-input" value="*" style="margin-top:0.5rem">
           <div class="cron-help">1-31</div>
         </div>
+
+        <!-- 月 -->
         <div class="form-group">
           <label>月 (1-12)</label>
           <div class="field-type">
@@ -97,6 +139,8 @@
           <input type="text" id="month" class="form-input" value="*" style="margin-top:0.5rem">
           <div class="cron-help">1-12</div>
         </div>
+
+        <!-- 星期 -->
         <div class="form-group">
           <label>星期 (0-6)</label>
           <div class="field-type">
@@ -110,9 +154,24 @@
           <input type="text" id="weekday" class="form-input" value="*" style="margin-top:0.5rem">
           <div class="cron-help">0=周日, 1-6=周一至周六</div>
         </div>
+
+        <!-- 年 (7字段模式) -->
+        <div class="form-group" id="yearField" style="display:none">
+          <label>年</label>
+          <div class="field-type">
+            <select id="year_type" onchange="updateFieldInput('year')">
+              <option value="*" selected>每年 (*)</option>
+              <option value="specific">指定值</option>
+              <option value="range">范围 (x-y)</option>
+              <option value="list">列表 (x,y,z)</option>
+            </select>
+          </div>
+          <input type="text" id="year" class="form-input" value="*" style="margin-top:0.5rem">
+          <div class="cron-help">如 2024, 2024-2030</div>
+        </div>
       </div>
 
-      <button class="btn btn-primary btn-block" onclick="generateCron()">生成并计算执行时间</button>
+      <button class="btn btn-primary btn-block" onclick="generateCron()" style="margin-top:1rem">生成并计算执行时间</button>
       <div id="result" class="result-area"></div>
       
       <div class="form-group" style="margin-top:1rem">
@@ -130,24 +189,51 @@
   </div>
   <script src="/static/js/common.js"></script>
   <script>
-    function setPreset(expr) {
-      const parts = expr.split(' ');
-      document.getElementById('minute').value = parts[0];
-      document.getElementById('hour').value = parts[1];
-      document.getElementById('day').value = parts[2];
-      document.getElementById('month').value = parts[3];
-      document.getElementById('weekday').value = parts[4];
+    let cronFormat = 5;
+    
+    function switchFormat(format) {
+      cronFormat = format;
+      const fields = document.getElementById('cronFields');
+      fields.className = `cron-fields fields-${format}`;
+      
+      document.getElementById('secondField').style.display = format >= 6 ? 'block' : 'none';
+      document.getElementById('yearField').style.display = format === 7 ? 'block' : 'none';
+    }
+    
+    function setPreset(preset) {
+      const presets = {
+        'every-minute': { second: '0', minute: '*', hour: '*', day: '*', month: '*', weekday: '*', year: '*' },
+        'every-hour': { second: '0', minute: '0', hour: '*', day: '*', month: '*', weekday: '*', year: '*' },
+        'every-day': { second: '0', minute: '0', hour: '0', day: '*', month: '*', weekday: '*', year: '*' },
+        'every-day-8': { second: '0', minute: '0', hour: '8', day: '*', month: '*', weekday: '*', year: '*' },
+        'every-monday': { second: '0', minute: '0', hour: '0', day: '*', month: '*', weekday: '1', year: '*' },
+        'every-month': { second: '0', minute: '0', hour: '0', day: '1', month: '*', weekday: '*', year: '*' },
+        'every-5min': { second: '0', minute: '*/5', hour: '*', day: '*', month: '*', weekday: '*', year: '*' },
+        'every-30sec': { second: '*/30', minute: '*', hour: '*', day: '*', month: '*', weekday: '*', year: '*' }
+      };
+      
+      const p = presets[preset];
+      if (!p) return;
+      
+      document.getElementById('second').value = p.second;
+      document.getElementById('minute').value = p.minute;
+      document.getElementById('hour').value = p.hour;
+      document.getElementById('day').value = p.day;
+      document.getElementById('month').value = p.month;
+      document.getElementById('weekday').value = p.weekday;
+      document.getElementById('year').value = p.year;
+      
       // 更新类型选择器
-      updateTypeSelector('minute', parts[0]);
-      updateTypeSelector('hour', parts[1]);
-      updateTypeSelector('day', parts[2]);
-      updateTypeSelector('month', parts[3]);
-      updateTypeSelector('weekday', parts[4]);
+      ['second', 'minute', 'hour', 'day', 'month', 'weekday', 'year'].forEach(field => {
+        updateTypeSelector(field, p[field]);
+      });
+      
       generateCron();
     }
     
     function updateTypeSelector(field, value) {
       const select = document.getElementById(field + '_type');
+      if (!select) return;
       if (value === '*') select.value = '*';
       else if (value.includes('/')) select.value = 'step';
       else if (value.includes('-')) select.value = 'range';
@@ -158,29 +244,40 @@
     function updateFieldInput(field) {
       const type = document.getElementById(field + '_type').value;
       const input = document.getElementById(field);
-      const defaults = { minute: '0', hour: '0', day: '1', month: '1', weekday: '0' };
+      const defaults = { second: '0', minute: '0', hour: '0', day: '1', month: '1', weekday: '0', year: '2024' };
       
       switch(type) {
         case '*': input.value = '*'; break;
         case 'specific': input.value = defaults[field]; break;
-        case 'range': input.value = field === 'minute' ? '0-30' : field === 'hour' ? '9-17' : '1-15'; break;
-        case 'step': input.value = field === 'minute' ? '*/5' : '*/2'; break;
-        case 'list': input.value = field === 'weekday' ? '1,3,5' : '1,15'; break;
+        case 'range': 
+          if (field === 'second' || field === 'minute') input.value = '0-30';
+          else if (field === 'hour') input.value = '9-17';
+          else if (field === 'year') input.value = '2024-2030';
+          else input.value = '1-15';
+          break;
+        case 'step': input.value = field === 'second' ? '*/30' : field === 'minute' ? '*/5' : '*/2'; break;
+        case 'list': input.value = field === 'weekday' ? '1,3,5' : field === 'year' ? '2024,2025,2026' : '1,15'; break;
       }
     }
     
     async function generateCron() {
       const data = {
+        format: cronFormat,
+        second: document.getElementById('second').value,
         minute: document.getElementById('minute').value,
         hour: document.getElementById('hour').value,
         day: document.getElementById('day').value,
         month: document.getElementById('month').value,
-        weekday: document.getElementById('weekday').value
+        weekday: document.getElementById('weekday').value,
+        year: document.getElementById('year').value
       };
+      
       const result = await apiRequest('/dev/cron-generate', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
       });
+      
       if (result.success) {
         document.getElementById('expression').value = result.expression;
         document.getElementById('description').textContent = result.description;

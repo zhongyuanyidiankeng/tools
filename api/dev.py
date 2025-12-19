@@ -26,11 +26,14 @@ class JWTDecodeResponse(BaseModel):
 
 
 class CronGenerateRequest(BaseModel):
+    format: int = 5  # 5, 6, 或 7 字段格式
+    second: str = "0"
     minute: str = "*"
     hour: str = "*"
     day: str = "*"
     month: str = "*"
     weekday: str = "*"
+    year: str = "*"
 
 
 class CronGenerateResponse(BaseModel):
@@ -91,13 +94,16 @@ async def decode_jwt(request: JWTDecodeRequest):
 
 @router.post("/cron-generate", response_model=CronGenerateResponse)
 async def generate_cron(request: CronGenerateRequest):
-    """Cron 表达式生成"""
+    """Cron 表达式生成，支持5/6/7字段格式"""
     result = dev_service.generate_cron(
-        request.minute,
-        request.hour,
-        request.day,
-        request.month,
-        request.weekday
+        format=request.format,
+        second=request.second,
+        minute=request.minute,
+        hour=request.hour,
+        day=request.day,
+        month=request.month,
+        weekday=request.weekday,
+        year=request.year
     )
     
     # 将 datetime 转换为字符串

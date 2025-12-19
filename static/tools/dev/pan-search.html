@@ -107,17 +107,45 @@
     }
     
     function renderResults(data) {
-      const html = data.map(item => `
-        <div class="result-item">
-          <div class="result-title"><a href="${item.url}" target="_blank">${escapeHtml(item.title)}</a></div>
-          <div class="result-meta">
-            <span>📁 ${item.pan_type || '网盘'}</span>
-            ${item.size ? `<span>📦 ${item.size}</span>` : ''}
-            ${item.time ? `<span>🕐 ${item.time}</span>` : ''}
+      const panTypeNames = {
+        'baidu': '百度网盘',
+        'aliyun': '阿里云盘',
+        'quark': '夸克网盘',
+        '115': '115网盘',
+        'xunlei': '迅雷云盘'
+      };
+      
+      const html = data.map(item => {
+        const panName = panTypeNames[item.pan_type] || item.pan_type || '网盘';
+        const hasUrl = item.url && item.url.length > 0;
+        const titleHtml = hasUrl 
+          ? `<a href="${item.url}" target="_blank">${escapeHtml(item.title || '未知资源')}</a>`
+          : escapeHtml(item.title || '未知资源');
+        
+        return `
+          <div class="result-item">
+            <div class="result-title">${titleHtml}</div>
+            <div class="result-meta">
+              <span>📁 ${panName}</span>
+              ${item.password ? `<span>🔑 密码: ${item.password}</span>` : ''}
+              ${item.time ? `<span>🕐 ${formatTime(item.time)}</span>` : ''}
+              ${item.source ? `<span>📢 ${item.source}</span>` : ''}
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
       document.getElementById('result').innerHTML = html;
+    }
+    
+    function formatTime(timeStr) {
+      if (!timeStr) return '';
+      try {
+        const date = new Date(timeStr);
+        if (isNaN(date.getTime())) return timeStr;
+        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      } catch {
+        return timeStr;
+      }
     }
     
     function escapeHtml(text) {
